@@ -1,568 +1,356 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building Magia - Battle Prototype</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            overflow: hidden;
-        }
-        
-        #game-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-        }
-        
-        /* 敵チームエリア */
-        #enemy-team {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            padding: 20px;
-        }
-        
-        /* プレイヤーチームエリア */
-        #player-team {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            padding: 20px;
-        }
-        
-        /* キャラクターカード */
-        .character {
-            width: 180px;
-            height: 280px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid #00ffff;
-            border-radius: 15px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .character:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.5);
-        }
-        
-        .character.enemy {
-            border-color: #ff4757;
-        }
-        
-        .character.dead {
-            opacity: 0.3;
-            filter: grayscale(100%);
-            pointer-events: none;
-        }
-        
-        .character-image {
-            width: 140px;
-            height: 140px;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            margin: 10px 0;
-        }
-        
-        .character-name {
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        
-        .hp-bar-container {
-            width: 100%;
-            height: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .hp-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
-            transition: width 0.5s ease;
-            position: relative;
-        }
-        
-        .character.enemy .hp-bar {
-            background: linear-gradient(90deg, #ff4757 0%, #cc3344 100%);
-        }
-        
-        .hp-text {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            line-height: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
-        }
-        
-        .stats {
-            width: 100%;
-            font-size: 11px;
-            display: flex;
-            justify-content: space-between;
-            padding: 5px;
-        }
-        
-        /* カードエリア */
-        #card-area {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 20px 20px 0 0;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        .card {
-            width: 120px;
-            height: 160px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 2px solid #fff;
-            border-radius: 10px;
-            padding: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        
-        .card:hover {
-            transform: translateY(-20px) scale(1.05);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.8);
-        }
-        
-        .card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .card-name {
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .card-cost {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 30px;
-            height: 30px;
-            background: #ffd700;
-            color: #000;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .card-damage {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #ff4757;
-        }
-        
-        /* UI情報エリア */
-        #ui-info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            min-width: 200px;
-        }
-        
-        #turn-info {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        #energy-info {
-            font-size: 16px;
-            color: #ffd700;
-        }
-        
-        /* リザルト画面 */
-        #result-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 1000;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        #result-screen.show {
-            display: flex;
-        }
-        
-        #result-text {
-            font-size: 72px;
-            font-weight: bold;
-            margin-bottom: 40px;
-            text-shadow: 0 0 20px currentColor;
-        }
-        
-        #result-text.win {
-            color: #00ff88;
-        }
-        
-        #result-text.lose {
-            color: #ff4757;
-        }
-        
-        .result-button {
-            padding: 15px 40px;
-            font-size: 18px;
-            margin: 10px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        
-        .result-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.8);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Building Magia — 実在する建物がNFTキャラクターになるMonapartyブロックチェーンゲーム">
+  <meta property="og:title" content="Building Magia">
+  <meta property="og:description" content="実在する建物がNFTキャラクターになるMonapartyブロックチェーンゲーム">
+  <title>Building Magia — Monaparty NFT Card Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d0d1a; --surface:#1a1830; --border:#3a3060;
+      --accent:#7a5fd0; --accent2:#c9b8ff; --text:#e0d8ff; --muted:#7a6fa0;
+      --goho:#4080ff; --kinnara:#40c060; --karura:#e0a020;
+      --ok:#4caf50; --warn:#ff9800; --error:#f44336;
+    }
+    html { scroll-behavior: smooth; }
+    body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Hiragino Sans',sans-serif; min-height:100vh; }
+
+    /* HEADER */
+    header { background:linear-gradient(180deg,#12102a 0%,#0d0d1a 100%); border-bottom:1px solid var(--border); padding:48px 24px 40px; text-align:center; }
+    .logo { font-size:2.4rem; font-weight:900; letter-spacing:4px; background:linear-gradient(135deg,#c9b8ff,#7a5fd0,#4080ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .tagline { margin-top:10px; font-size:0.95rem; color:var(--muted); letter-spacing:1px; }
+    nav { display:flex; justify-content:center; gap:8px; margin-top:24px; flex-wrap:wrap; }
+    nav a { color:var(--accent2); text-decoration:none; font-size:0.85rem; padding:6px 16px; border:1px solid var(--border); border-radius:20px; transition:all 0.2s; }
+    nav a:hover { background:var(--surface); border-color:var(--accent); }
+
+    /* MAIN */
+    main { max-width:720px; margin:0 auto; padding:32px 20px 64px; }
+
+    /* CLASS BADGES */
+    .class-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:32px; }
+    .cbadge { border-radius:10px; padding:16px 12px; text-align:center; border:1px solid; }
+    .cbadge.goho    { border-color:var(--goho);    background:#0d1830; }
+    .cbadge.kinnara { border-color:var(--kinnara); background:#0d1a10; }
+    .cbadge.karura  { border-color:var(--karura);  background:#1a1408; }
+    .cbadge .cname { font-size:1rem; font-weight:bold; margin-bottom:4px; }
+    .cbadge.goho    .cname { color:var(--goho); }
+    .cbadge.kinnara .cname { color:var(--kinnara); }
+    .cbadge.karura  .cname { color:var(--karura); }
+    .cbadge .cjp { font-size:0.75rem; color:var(--muted); }
+
+    /* CARD */
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:20px; }
+    .panel h2 { font-size:1rem; color:var(--accent2); margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #2a2450; }
+
+    /* STATUS */
+    .srow { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .dot { width:10px; height:10px; border-radius:50%; background:#444; flex-shrink:0; }
+    .dot.ok    { background:var(--ok);    box-shadow:0 0 6px var(--ok); }
+    .dot.warn  { background:var(--warn);  box-shadow:0 0 6px var(--warn); }
+    .dot.error { background:var(--error); box-shadow:0 0 6px var(--error); }
+    .slabel { font-size:0.82rem; color:var(--muted); width:140px; flex-shrink:0; }
+    .sval   { font-size:0.88rem; word-break:break-all; }
+
+    /* BUTTON */
+    .btn { display:inline-block; background:linear-gradient(135deg,#5a3fa0,#3a2870); color:var(--text); border:1px solid var(--accent); border-radius:8px; padding:10px 24px; font-size:0.95rem; cursor:pointer; transition:all 0.2s; margin-top:10px; }
+    .btn:hover   { background:linear-gradient(135deg,#7a5fd0,#5a3fa0); }
+    .btn:disabled { opacity:0.35; cursor:not-allowed; }
+
+    /* LOG */
+    .log { background:#0a0a14; border:1px solid #2a2450; border-radius:8px; padding:12px 14px; font-family:monospace; font-size:0.78rem; max-height:200px; overflow-y:auto; margin-top:12px; line-height:1.7; }
+    .log .ok    { color:#80e080; }
+    .log .warn  { color:#ffc060; }
+    .log .error { color:#ff7070; }
+    .log .info  { color:#80c0ff; }
+
+    /* BALANCE */
+    .bgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .bitem { background:#12102a; border:1px solid #2a2450; border-radius:8px; padding:14px; text-align:center; }
+    .bitem .tname  { font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
+    .bitem .tamount{ font-size:1.5rem; font-weight:bold; color:var(--accent2); }
+    .bitem .tunit  { font-size:0.72rem; color:#6a5a90; }
+
+    /* NFT GRID */
+    .ngrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:12px; margin-top:14px; }
+    .ncard { background:#12102a; border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; transition:transform 0.15s; }
+    .ncard:hover { transform:translateY(-2px); }
+    .ncard.goho    { border-color:var(--goho); }
+    .ncard.kinnara { border-color:var(--kinnara); }
+    .ncard.karura  { border-color:var(--karura); }
+    .ncard img { width:100%; height:90px; object-fit:cover; border-radius:6px; background:#2a2450; margin-bottom:8px; }
+    .ncard .nname  { font-size:0.76rem; color:var(--accent2); font-weight:bold; margin-bottom:3px; }
+    .ncard .nasset { font-size:0.65rem; color:#6a5a90; }
+    .ncard .nqty   { font-size:0.72rem; color:var(--ok); margin-top:5px; }
+
+    .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:0.68rem; margin-top:4px; }
+    .badge.goho    { background:#1a2860; color:#80a0ff; }
+    .badge.kinnara { background:#1a3020; color:#60d080; }
+    .badge.karura  { background:#302010; color:#e0b040; }
+
+    .install-notice { background:#2a1a10; border:1px solid #c06020; border-radius:8px; padding:16px; margin-top:12px; font-size:0.85rem; color:#e0b080; line-height:1.8; }
+    .install-notice a { color:#ffc080; }
+    .empty-msg { text-align:center; color:var(--muted); font-size:0.85rem; padding:20px 0; }
+
+    /* FOOTER */
+    footer { text-align:center; padding:32px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:0.78rem; line-height:2; }
+    footer a { color:var(--accent2); text-decoration:none; }
+    footer a:hover { text-decoration:underline; }
+
+    @media(max-width:480px) {
+      .class-row { grid-template-columns:1fr; }
+      .bgrid     { grid-template-columns:1fr; }
+      .logo      { font-size:1.8rem; }
+    }
+  </style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- UI情報 -->
-        <div id="ui-info">
-            <div id="turn-info">ターン: <span id="turn-number">1</span></div>
-            <div id="energy-info">エナジー: <span id="energy-current">3</span> / <span id="energy-max">3</span></div>
-        </div>
-        
-        <!-- 敵チーム -->
-        <div id="enemy-team">
-            <div class="character enemy" data-id="enemy1" data-hp="100" data-max-hp="100">
-                <div class="character-name">護法童子・阿</div>
-                <div class="character-image" style="background-image: url('GOHODOJI_A_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 45</span>
-                    <span>DEF: 40</span>
-                </div>
-            </div>
-            
-            <div class="character enemy" data-id="enemy2" data-hp="100" data-max-hp="100">
-                <div class="character-name">緊那羅・吽</div>
-                <div class="character-image" style="background-image: url('KINNARA_UN_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 40</span>
-                    <span>DEF: 50</span>
-                </div>
-            </div>
-            
-            <div class="character enemy" data-id="enemy3" data-hp="100" data-max-hp="100">
-                <div class="character-name">迦楼羅・釈</div>
-                <div class="character-image" style="background-image: url('KARURA_SHAKU_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 55</span>
-                    <span>DEF: 30</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- プレイヤーチーム -->
-        <div id="player-team">
-            <div class="character" data-id="player1" data-hp="100" data-max-hp="100">
-                <div class="character-name">護法童子・阿</div>
-                <div class="character-image" style="background-image: url('GOHODOJI_A_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 45</span>
-                    <span>DEF: 40</span>
-                </div>
-            </div>
-            
-            <div class="character" data-id="player2" data-hp="100" data-max-hp="100">
-                <div class="character-name">緊那羅・吽</div>
-                <div class="character-image" style="background-image: url('KINNARA_UN_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 40</span>
-                    <span>DEF: 50</span>
-                </div>
-            </div>
-            
-            <div class="character" data-id="player3" data-hp="100" data-max-hp="100">
-                <div class="character-name">迦楼羅・釈</div>
-                <div class="character-image" style="background-image: url('KARURA_SHAKU_concept.png');"></div>
-                <div class="hp-bar-container">
-                    <div class="hp-bar" style="width: 100%;"></div>
-                    <div class="hp-text">100 / 100</div>
-                </div>
-                <div class="stats">
-                    <span>ATK: 55</span>
-                    <span>DEF: 30</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- カードエリア -->
-        <div id="card-area">
-            <div class="card" data-cost="1" data-damage="40">
-                <div class="card-cost">1</div>
-                <div class="card-name">斬撃</div>
-                <div class="card-damage">40</div>
-            </div>
-            <div class="card" data-cost="2" data-damage="60">
-                <div class="card-cost">2</div>
-                <div class="card-name">烈火</div>
-                <div class="card-damage">60</div>
-            </div>
-            <div class="card" data-cost="1" data-damage="35">
-                <div class="card-cost">1</div>
-                <div class="card-name">雷撃</div>
-                <div class="card-damage">35</div>
-            </div>
-            <div class="card" data-cost="3" data-damage="90">
-                <div class="card-cost">3</div>
-                <div class="card-name">奥義</div>
-                <div class="card-damage">90</div>
-            </div>
-        </div>
+
+<header>
+  <div class="logo">&#9889; BUILDING MAGIA</div>
+  <div class="tagline">実在する建物が NFT キャラクターになる Monaparty ブロックチェーンゲーム</div>
+  <nav>
+    <a href="#wallet">ウォレット接続</a>
+    <a href="#balance">残高確認</a>
+    <a href="#cards">NFT カード</a>
+    <a href="battle.html">バトル（β）</a>
+    <a href="https://github.com/shimanto/building-magia-client" target="_blank">GitHub</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="class-row" style="margin-top:8px;">
+    <div class="cbadge goho">
+      <div class="cname">GOHO</div>
+      <div class="cjp">護法童子 — 青</div>
     </div>
-    
-    <!-- リザルト画面 -->
-    <div id="result-screen">
-        <div id="result-text">YOU WIN</div>
-        <div>
-            <button class="result-button" onclick="location.reload()">もう一度戦う</button>
-            <button class="result-button" onclick="alert('タイトル画面は未実装')">タイトルへ戻る</button>
-        </div>
+    <div class="cbadge kinnara">
+      <div class="cname">KINNARA</div>
+      <div class="cjp">緊那羅 — 緑</div>
     </div>
-    
-    <script>
-        // ゲーム状態
-        let currentEnergy = 3;
-        let maxEnergy = 3;
-        let turnNumber = 1;
-        let selectedCard = null;
-        let playerTurn = true;
-        
-        // カードクリック処理
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('click', function() {
-                if (!playerTurn) return;
-                
-                const cost = parseInt(this.dataset.cost);
-                if (cost > currentEnergy) {
-                    alert('エナジーが足りません！');
-                    return;
-                }
-                
-                selectedCard = this;
-                document.querySelectorAll('.card').forEach(c => c.style.border = '2px solid #fff');
-                this.style.border = '4px solid #00ff88';
-                
-                // 敵キャラクターをクリック可能に
-                document.querySelectorAll('.character.enemy').forEach(enemy => {
-                    if (!enemy.classList.contains('dead')) {
-                        enemy.style.cursor = 'crosshair';
-                    }
-                });
-            });
-        });
-        
-        // 敵キャラクタークリック処理（攻撃）
-        document.querySelectorAll('.character.enemy').forEach(enemy => {
-            enemy.addEventListener('click', function() {
-                if (!selectedCard || !playerTurn) return;
-                if (this.classList.contains('dead')) return;
-                
-                const damage = parseInt(selectedCard.dataset.damage);
-                const cost = parseInt(selectedCard.dataset.cost);
-                
-                // ダメージ処理
-                dealDamage(this, damage);
-                
-                // エナジー消費
-                currentEnergy -= cost;
-                updateUI();
-                
-                // カード選択解除
-                selectedCard.style.border = '2px solid #fff';
-                selectedCard = null;
-                
-                // 勝敗判定
-                if (checkGameOver()) return;
-                
-                // 敵のターン
-                setTimeout(enemyTurn, 1000);
-            });
-        });
-        
-        // ダメージ処理
-        function dealDamage(character, damage) {
-            let currentHp = parseInt(character.dataset.hp);
-            currentHp = Math.max(0, currentHp - damage);
-            character.dataset.hp = currentHp;
-            
-            const maxHp = parseInt(character.dataset.maxHp);
-            const hpPercent = (currentHp / maxHp) * 100;
-            
-            const hpBar = character.querySelector('.hp-bar');
-            const hpText = character.querySelector('.hp-text');
-            
-            hpBar.style.width = hpPercent + '%';
-            hpText.textContent = currentHp + ' / ' + maxHp;
-            
-            if (currentHp === 0) {
-                character.classList.add('dead');
-            }
-        }
-        
-        // 敵のターン
-        function enemyTurn() {
-            playerTurn = false;
-            
-            // 生存している敵キャラクターを取得
-            const aliveEnemies = Array.from(document.querySelectorAll('.character.enemy')).filter(e => !e.classList.contains('dead'));
-            if (aliveEnemies.length === 0) return;
-            
-            // ランダムな敵が攻撃
-            const attacker = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
-            
-            // 生存しているプレイヤーキャラクターを取得
-            const alivePlayers = Array.from(document.querySelectorAll('.character:not(.enemy)')).filter(p => !p.classList.contains('dead'));
-            if (alivePlayers.length === 0) return;
-            
-            // ランダムなプレイヤーを攻撃
-            const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
-            
-            setTimeout(() => {
-                dealDamage(target, 30 + Math.floor(Math.random() * 20));
-                
-                if (checkGameOver()) return;
-                
-                // プレイヤーのターンに戻る
-                setTimeout(nextTurn, 1000);
-            }, 500);
-        }
-        
-        // 次のターン
-        function nextTurn() {
-            playerTurn = true;
-            turnNumber++;
-            currentEnergy = maxEnergy;
-            updateUI();
-        }
-        
-        // UI更新
-        function updateUI() {
-            document.getElementById('turn-number').textContent = turnNumber;
-            document.getElementById('energy-current').textContent = currentEnergy;
-            document.getElementById('energy-max').textContent = maxEnergy;
-            
-            // エナジー不足のカードを無効化
-            document.querySelectorAll('.card').forEach(card => {
-                const cost = parseInt(card.dataset.cost);
-                if (cost > currentEnergy) {
-                    card.classList.add('disabled');
-                } else {
-                    card.classList.remove('disabled');
-                }
-            });
-        }
-        
-        // 勝敗判定
-        function checkGameOver() {
-            const aliveEnemies = Array.from(document.querySelectorAll('.character.enemy')).filter(e => !e.classList.contains('dead'));
-            const alivePlayers = Array.from(document.querySelectorAll('.character:not(.enemy)')).filter(p => !p.classList.contains('dead'));
-            
-            if (aliveEnemies.length === 0) {
-                showResult(true);
-                return true;
-            }
-            
-            if (alivePlayers.length === 0) {
-                showResult(false);
-                return true;
-            }
-            
-            return false;
-        }
-        
-        // リザルト表示
-        function showResult(isWin) {
-            const resultScreen = document.getElementById('result-screen');
-            const resultText = document.getElementById('result-text');
-            
-            if (isWin) {
-                resultText.textContent = 'YOU WIN';
-                resultText.className = 'win';
-            } else {
-                resultText.textContent = 'YOU LOSE';
-                resultText.className = 'lose';
-            }
-            
-            resultScreen.classList.add('show');
-        }
-        
-        // 初期化
-        updateUI();
-    </script>
+    <div class="cbadge karura">
+      <div class="cname">KARURA</div>
+      <div class="cjp">迦楼羅 — 赤黄</div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="panel" id="wallet">
+    <h2>Step 1 — Mpurse 検出 / Detection</h2>
+    <div class="srow">
+      <div class="dot" id="dot-mpurse"></div>
+      <span class="slabel">Mpurse 拡張機能</span>
+      <span class="sval" id="val-mpurse">確認中...</span>
+    </div>
+    <div id="install-notice" class="install-notice" style="display:none;">
+      Mpurse がインストールされていません。<br>
+      Monaparty ウォレットの Chrome / Firefox 拡張機能です。<br>
+      <a href="https://github.com/tadajam/mpurse" target="_blank">→ GitHub: tadajam/mpurse</a> からインストールしてください。
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="panel">
+    <h2>Step 2 — ウォレット接続 / Connect Wallet</h2>
+    <div class="srow">
+      <div class="dot" id="dot-addr"></div>
+      <span class="slabel">アドレス</span>
+      <span class="sval" id="val-addr">未接続</span>
+    </div>
+    <button class="btn" id="btn-connect" onclick="connectWallet()">ウォレットに接続する</button>
+    <div class="log" id="log-connect"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="panel" id="balance">
+    <h2>Step 3 — 残高確認 / Balances</h2>
+    <div class="bgrid">
+      <div class="bitem">
+        <div class="tname">XMP</div>
+        <div class="tamount" id="bal-xmp">—</div>
+        <div class="tunit">XMP</div>
+      </div>
+      <div class="bitem">
+        <div class="tname">KEKKAI（イベント通貨）</div>
+        <div class="tamount" id="bal-kekkai">—</div>
+        <div class="tunit">KEKKAI</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-balance" onclick="fetchBalances()" disabled>残高を取得する</button>
+    <div class="log" id="log-balance"></div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="panel" id="cards">
+    <h2>Step 4 — 保有 NFT カード / Owned Building Cards</h2>
+    <button class="btn" id="btn-cards" onclick="fetchCards()" disabled>カードを取得する</button>
+    <div class="empty-msg" id="empty-cards">ウォレット接続後にカードを取得できます</div>
+    <div class="ngrid" id="nft-grid"></div>
+    <div class="log" id="log-cards"></div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="panel">
+    <h2>Step 5 — 全アセット残高（デバッグ）/ Raw Balances</h2>
+    <button class="btn" id="btn-raw" onclick="fetchRaw()" disabled>生データを取得する</button>
+    <div class="log" id="log-raw"></div>
+  </div>
+
+</main>
+
+<footer>
+  <div>Building Magia — Monaparty NFT Card Game</div>
+  <div>
+    <a href="https://github.com/shimanto/building-magia-client" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://www.monaparty.me/" target="_blank">Monaparty</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/tadajam/mpurse" target="_blank">Mpurse</a>
+  </div>
+  <div style="margin-top:8px;color:#4a4070;">&#169; 2026 Building Magia. Powered by Monaparty.</div>
+</footer>
+
+<script>
+  var addr = null;
+
+  function addLog(id, msg, type) {
+    type = type || 'info';
+    var box = document.getElementById(id);
+    var el = document.createElement('div');
+    el.className = type;
+    el.textContent = '[' + new Date().toLocaleTimeString('ja-JP') + '] ' + msg;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function detectMpurse() {
+    var dot = document.getElementById('dot-mpurse');
+    var val = document.getElementById('val-mpurse');
+    if (typeof window.mpurse !== 'undefined') {
+      dot.className = 'dot ok';
+      val.textContent = '検出されました ✓';
+    } else {
+      dot.className = 'dot error';
+      val.textContent = '未インストール — Mpurse が見つかりません';
+      document.getElementById('install-notice').style.display = 'block';
+      document.getElementById('btn-connect').disabled = true;
+    }
+  }
+
+  async function connectWallet() {
+    addLog('log-connect', 'window.mpurse.getAddress() を呼び出し中...', 'info');
+    try {
+      addr = await window.mpurse.getAddress();
+      document.getElementById('dot-addr').className = 'dot ok';
+      document.getElementById('val-addr').textContent = addr;
+      addLog('log-connect', '接続成功: ' + addr, 'ok');
+      ['btn-balance','btn-cards','btn-raw'].forEach(function(id){
+        document.getElementById(id).disabled = false;
+      });
+      document.getElementById('empty-cards').textContent = '「カードを取得する」ボタンを押してください';
+    } catch(e) {
+      document.getElementById('dot-addr').className = 'dot error';
+      addLog('log-connect', 'エラー: ' + (e.message || e), 'error');
+    }
+  }
+
+  async function fetchBalances() {
+    if (!addr) return;
+    var assets = ['XMP','KEKKAI'];
+    for (var i = 0; i < assets.length; i++) {
+      var asset = assets[i];
+      addLog('log-balance', asset + ' 残高を取得中...', 'info');
+      try {
+        var res = await window.mpurse.mpchain('balance', { address: addr, asset: asset });
+        var qty = (res.quantity !== undefined ? res.quantity : res) / 1e8;
+        var elId = asset === 'XMP' ? 'bal-xmp' : 'bal-kekkai';
+        document.getElementById(elId).textContent = qty.toFixed(4);
+        addLog('log-balance', asset + ': ' + qty.toFixed(4), 'ok');
+      } catch(e) {
+        document.getElementById(asset === 'XMP' ? 'bal-xmp' : 'bal-kekkai').textContent = '0';
+        addLog('log-balance', asset + ': ゼロまたは未発行 (' + (e.message || e) + ')', 'warn');
+      }
+    }
+  }
+
+  async function fetchCards() {
+    if (!addr) return;
+    var grid = document.getElementById('nft-grid');
+    var empty = document.getElementById('empty-cards');
+    grid.innerHTML = '';
+    addLog('log-cards', '全アセット残高を取得中...', 'info');
+    try {
+      var all = await window.mpurse.mpchain('balances', { address: addr });
+      addLog('log-cards', '取得アセット数: ' + all.length, 'info');
+      var cards = all.filter(function(b){
+        return b.asset.startsWith('GOHO.') || b.asset.startsWith('KINNARA.') || b.asset.startsWith('KARURA.');
+      });
+      addLog('log-cards', 'Building Magia カード数: ' + cards.length, 'ok');
+      if (cards.length === 0) {
+        empty.textContent = 'Building Magia のカードは見つかりませんでした — デモカードを表示します';
+        renderDemo(grid);
+        return;
+      }
+      empty.style.display = 'none';
+      var names = cards.map(function(b){ return b.asset; }).join(',');
+      addLog('log-cards', 'Monacard API 呼び出し中...', 'info');
+      var res = await fetch('https://card.mona.jp/api/card_detail?assets=' + encodeURIComponent(names));
+      var data = await res.json();
+      addLog('log-cards', 'Monacard API 取得完了', 'ok');
+      cards.forEach(function(b){ renderCard(grid, b, data[b.asset] || {}); });
+    } catch(e) {
+      addLog('log-cards', 'エラー: ' + (e.message || e), 'error');
+    }
+  }
+
+  function getClass(asset) {
+    if (asset.startsWith('GOHO.'))    return 'goho';
+    if (asset.startsWith('KINNARA.')) return 'kinnara';
+    if (asset.startsWith('KARURA.'))  return 'karura';
+    return '';
+  }
+
+  function renderCard(grid, b, detail) {
+    var c = getClass(b.asset);
+    var qty = Math.floor(b.quantity / 1e8);
+    var name = detail.name || b.asset;
+    var img = detail.img_url || '';
+    var div = document.createElement('div');
+    div.className = 'ncard ' + c;
+    div.innerHTML =
+      (img ? '<img src="' + img + '" alt="' + name + '" loading="lazy" onerror="this.style.display=\'none\'">' : '') +
+      '<div class="nname">' + name + '</div>' +
+      '<div class="nasset">' + b.asset + '</div>' +
+      '<span class="badge ' + c + '">' + c.toUpperCase() + '</span>' +
+      '<div class="nqty">所持数: ' + qty + '</div>';
+    grid.appendChild(div);
+  }
+
+  function renderDemo(grid) {
+    var demos = [
+      { asset:'GOHO.SHIBUYA_SCRAMBLE',  name:'渋谷スクランブルスクエア', qty:3 },
+      { asset:'KINNARA.SHINJUKU_NS',     name:'新宿NSビル',               qty:1 },
+      { asset:'KARURA.TOKYO_MIDTOWN',    name:'東京ミッドタウン',          qty:2 },
+      { asset:'GOHO.MORI_TOWER',         name:'六本木ヒルズ森タワー',      qty:1 }
+    ];
+    demos.forEach(function(d){ renderCard(grid, { asset:d.asset, quantity:d.qty*1e8 }, { name:d.name }); });
+  }
+
+  async function fetchRaw() {
+    if (!addr) return;
+    addLog('log-raw', '全アセット残高を取得中...', 'info');
+    try {
+      var res = await window.mpurse.mpchain('balances', { address: addr });
+      addLog('log-raw', JSON.stringify(res, null, 2), 'ok');
+    } catch(e) {
+      addLog('log-raw', 'エラー: ' + (e.message || e), 'error');
+    }
+  }
+
+  window.addEventListener('load', function(){ setTimeout(detectMpurse, 500); });
+</script>
 </body>
 </html>

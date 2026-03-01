@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Magia - Battle Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        
+        /* 敵チームエリア */
+        #enemy-team {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+        }
+        
+        /* プレイヤーチームエリア */
+        #player-team {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 20px;
+        }
+        
+        /* キャラクターカード */
+        .character {
+            width: 180px;
+            height: 280px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .character:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.5);
+        }
+        
+        .character.enemy {
+            border-color: #ff4757;
+        }
+        
+        .character.dead {
+            opacity: 0.3;
+            filter: grayscale(100%);
+            pointer-events: none;
+        }
+        
+        .character-image {
+            width: 140px;
+            height: 140px;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            margin: 10px 0;
+        }
+        
+        .character-name {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .hp-bar-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .hp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%);
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .character.enemy .hp-bar {
+            background: linear-gradient(90deg, #ff4757 0%, #cc3344 100%);
+        }
+        
+        .hp-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+        
+        .stats {
+            width: 100%;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+        }
+        
+        /* カードエリア */
+        #card-area {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .card {
+            width: 120px;
+            height: 160px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .card:hover {
+            transform: translateY(-20px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.8);
+        }
+        
+        .card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .card-name {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .card-cost {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 30px;
+            height: 30px;
+            background: #ffd700;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .card-damage {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: #ff4757;
+        }
+        
+        /* UI情報エリア */
+        #ui-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 200px;
+        }
+        
+        #turn-info {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        #energy-info {
+            font-size: 16px;
+            color: #ffd700;
+        }
+        
+        /* リザルト画面 */
+        #result-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #result-screen.show {
+            display: flex;
+        }
+        
+        #result-text {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px currentColor;
+        }
+        
+        #result-text.win {
+            color: #00ff88;
+        }
+        
+        #result-text.lose {
+            color: #ff4757;
+        }
+        
+        .result-button {
+            padding: 15px 40px;
+            font-size: 18px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .result-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- UI情報 -->
+        <div id="ui-info">
+            <div id="turn-info">ターン: <span id="turn-number">1</span></div>
+            <div id="energy-info">エナジー: <span id="energy-current">3</span> / <span id="energy-max">3</span></div>
+        </div>
+        
+        <!-- 敵チーム -->
+        <div id="enemy-team">
+            <div class="character enemy" data-id="enemy1" data-hp="100" data-max-hp="100">
+                <div class="character-name">護法童子・阿</div>
+                <div class="character-image" style="background-image: url('GOHODOJI_A_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 45</span>
+                    <span>DEF: 40</span>
+                </div>
+            </div>
+            
+            <div class="character enemy" data-id="enemy2" data-hp="100" data-max-hp="100">
+                <div class="character-name">緊那羅・吽</div>
+                <div class="character-image" style="background-image: url('KINNARA_UN_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 40</span>
+                    <span>DEF: 50</span>
+                </div>
+            </div>
+            
+            <div class="character enemy" data-id="enemy3" data-hp="100" data-max-hp="100">
+                <div class="character-name">迦楼羅・釈</div>
+                <div class="character-image" style="background-image: url('KARURA_SHAKU_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 55</span>
+                    <span>DEF: 30</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- プレイヤーチーム -->
+        <div id="player-team">
+            <div class="character" data-id="player1" data-hp="100" data-max-hp="100">
+                <div class="character-name">護法童子・阿</div>
+                <div class="character-image" style="background-image: url('GOHODOJI_A_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 45</span>
+                    <span>DEF: 40</span>
+                </div>
+            </div>
+            
+            <div class="character" data-id="player2" data-hp="100" data-max-hp="100">
+                <div class="character-name">緊那羅・吽</div>
+                <div class="character-image" style="background-image: url('KINNARA_UN_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 40</span>
+                    <span>DEF: 50</span>
+                </div>
+            </div>
+            
+            <div class="character" data-id="player3" data-hp="100" data-max-hp="100">
+                <div class="character-name">迦楼羅・釈</div>
+                <div class="character-image" style="background-image: url('KARURA_SHAKU_concept.png');"></div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                    <div class="hp-text">100 / 100</div>
+                </div>
+                <div class="stats">
+                    <span>ATK: 55</span>
+                    <span>DEF: 30</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- カードエリア -->
+        <div id="card-area">
+            <div class="card" data-cost="1" data-damage="40">
+                <div class="card-cost">1</div>
+                <div class="card-name">斬撃</div>
+                <div class="card-damage">40</div>
+            </div>
+            <div class="card" data-cost="2" data-damage="60">
+                <div class="card-cost">2</div>
+                <div class="card-name">烈火</div>
+                <div class="card-damage">60</div>
+            </div>
+            <div class="card" data-cost="1" data-damage="35">
+                <div class="card-cost">1</div>
+                <div class="card-name">雷撃</div>
+                <div class="card-damage">35</div>
+            </div>
+            <div class="card" data-cost="3" data-damage="90">
+                <div class="card-cost">3</div>
+                <div class="card-name">奥義</div>
+                <div class="card-damage">90</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- リザルト画面 -->
+    <div id="result-screen">
+        <div id="result-text">YOU WIN</div>
+        <div>
+            <button class="result-button" onclick="location.reload()">もう一度戦う</button>
+            <button class="result-button" onclick="alert('タイトル画面は未実装')">タイトルへ戻る</button>
+        </div>
+    </div>
+    
+    <script>
+        // ゲーム状態
+        let currentEnergy = 3;
+        let maxEnergy = 3;
+        let turnNumber = 1;
+        let selectedCard = null;
+        let playerTurn = true;
+        
+        // カードクリック処理
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', function() {
+                if (!playerTurn) return;
+                
+                const cost = parseInt(this.dataset.cost);
+                if (cost > currentEnergy) {
+                    alert('エナジーが足りません！');
+                    return;
+                }
+                
+                selectedCard = this;
+                document.querySelectorAll('.card').forEach(c => c.style.border = '2px solid #fff');
+                this.style.border = '4px solid #00ff88';
+                
+                // 敵キャラクターをクリック可能に
+                document.querySelectorAll('.character.enemy').forEach(enemy => {
+                    if (!enemy.classList.contains('dead')) {
+                        enemy.style.cursor = 'crosshair';
+                    }
+                });
+            });
+        });
+        
+        // 敵キャラクタークリック処理（攻撃）
+        document.querySelectorAll('.character.enemy').forEach(enemy => {
+            enemy.addEventListener('click', function() {
+                if (!selectedCard || !playerTurn) return;
+                if (this.classList.contains('dead')) return;
+                
+                const damage = parseInt(selectedCard.dataset.damage);
+                const cost = parseInt(selectedCard.dataset.cost);
+                
+                // ダメージ処理
+                dealDamage(this, damage);
+                
+                // エナジー消費
+                currentEnergy -= cost;
+                updateUI();
+                
+                // カード選択解除
+                selectedCard.style.border = '2px solid #fff';
+                selectedCard = null;
+                
+                // 勝敗判定
+                if (checkGameOver()) return;
+                
+                // 敵のターン
+                setTimeout(enemyTurn, 1000);
+            });
+        });
+        
+        // ダメージ処理
+        function dealDamage(character, damage) {
+            let currentHp = parseInt(character.dataset.hp);
+            currentHp = Math.max(0, currentHp - damage);
+            character.dataset.hp = currentHp;
+            
+            const maxHp = parseInt(character.dataset.maxHp);
+            const hpPercent = (currentHp / maxHp) * 100;
+            
+            const hpBar = character.querySelector('.hp-bar');
+            const hpText = character.querySelector('.hp-text');
+            
+            hpBar.style.width = hpPercent + '%';
+            hpText.textContent = currentHp + ' / ' + maxHp;
+            
+            if (currentHp === 0) {
+                character.classList.add('dead');
+            }
+        }
+        
+        // 敵のターン
+        function enemyTurn() {
+            playerTurn = false;
+            
+            // 生存している敵キャラクターを取得
+            const aliveEnemies = Array.from(document.querySelectorAll('.character.enemy')).filter(e => !e.classList.contains('dead'));
+            if (aliveEnemies.length === 0) return;
+            
+            // ランダムな敵が攻撃
+            const attacker = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+            
+            // 生存しているプレイヤーキャラクターを取得
+            const alivePlayers = Array.from(document.querySelectorAll('.character:not(.enemy)')).filter(p => !p.classList.contains('dead'));
+            if (alivePlayers.length === 0) return;
+            
+            // ランダムなプレイヤーを攻撃
+            const target = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+            
+            setTimeout(() => {
+                dealDamage(target, 30 + Math.floor(Math.random() * 20));
+                
+                if (checkGameOver()) return;
+                
+                // プレイヤーのターンに戻る
+                setTimeout(nextTurn, 1000);
+            }, 500);
+        }
+        
+        // 次のターン
+        function nextTurn() {
+            playerTurn = true;
+            turnNumber++;
+            currentEnergy = maxEnergy;
+            updateUI();
+        }
+        
+        // UI更新
+        function updateUI() {
+            document.getElementById('turn-number').textContent = turnNumber;
+            document.getElementById('energy-current').textContent = currentEnergy;
+            document.getElementById('energy-max').textContent = maxEnergy;
+            
+            // エナジー不足のカードを無効化
+            document.querySelectorAll('.card').forEach(card => {
+                const cost = parseInt(card.dataset.cost);
+                if (cost > currentEnergy) {
+                    card.classList.add('disabled');
+                } else {
+                    card.classList.remove('disabled');
+                }
+            });
+        }
+        
+        // 勝敗判定
+        function checkGameOver() {
+            const aliveEnemies = Array.from(document.querySelectorAll('.character.enemy')).filter(e => !e.classList.contains('dead'));
+            const alivePlayers = Array.from(document.querySelectorAll('.character:not(.enemy)')).filter(p => !p.classList.contains('dead'));
+            
+            if (aliveEnemies.length === 0) {
+                showResult(true);
+                return true;
+            }
+            
+            if (alivePlayers.length === 0) {
+                showResult(false);
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // リザルト表示
+        function showResult(isWin) {
+            const resultScreen = document.getElementById('result-screen');
+            const resultText = document.getElementById('result-text');
+            
+            if (isWin) {
+                resultText.textContent = 'YOU WIN';
+                resultText.className = 'win';
+            } else {
+                resultText.textContent = 'YOU LOSE';
+                resultText.className = 'lose';
+            }
+            
+            resultScreen.classList.add('show');
+        }
+        
+        // 初期化
+        updateUI();
+    </script>
+</body>
+</html>
