@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Magia — Mpurse Wallet Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d1a;
+      color: #e0d8ff;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      color: #c9b8ff;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #7a6fa0;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #1a1830;
+      border: 1px solid #3a3060;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #a090e0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #2a2450;
+      padding-bottom: 8px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #444;
+      flex-shrink: 0;
+    }
+    .status-dot.ok    { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+    .status-dot.warn  { background: #ff9800; box-shadow: 0 0 6px #ff9800; }
+    .status-dot.error { background: #f44336; box-shadow: 0 0 6px #f44336; }
+
+    .status-label {
+      font-size: 0.85rem;
+      color: #9080c0;
+      width: 160px;
+      flex-shrink: 0;
+    }
+
+    .status-value {
+      font-size: 0.9rem;
+      color: #e0d8ff;
+      word-break: break-all;
+    }
+
+    button {
+      background: linear-gradient(135deg, #5a3fa0, #3a2870);
+      color: #e0d8ff;
+      border: 1px solid #7a5fd0;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    button:hover { background: linear-gradient(135deg, #7a5fd0, #5a3fa0); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .log-box {
+      background: #0a0a14;
+      border: 1px solid #2a2450;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #a0c0ff;
+      max-height: 240px;
+      overflow-y: auto;
+      margin-top: 12px;
+      line-height: 1.6;
+    }
+
+    .log-box .log-ok    { color: #80e080; }
+    .log-box .log-warn  { color: #ffc060; }
+    .log-box .log-error { color: #ff7070; }
+    .log-box .log-info  { color: #80c0ff; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .nft-card {
+      background: #12102a;
+      border: 1px solid #3a3060;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .nft-card img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: #2a2450;
+    }
+
+    .nft-card .nft-name {
+      font-size: 0.78rem;
+      color: #c9b8ff;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .nft-card .nft-asset {
+      font-size: 0.68rem;
+      color: #6a5a90;
+    }
+
+    .nft-card .nft-qty {
+      font-size: 0.75rem;
+      color: #80e080;
+      margin-top: 4px;
+    }
+
+    .class-goho    { border-color: #4080ff; }
+    .class-kinnara { border-color: #40c060; }
+    .class-karura  { border-color: #e0a020; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-top: 4px;
+    }
+    .badge-goho    { background: #1a2860; color: #80a0ff; }
+    .badge-kinnara { background: #1a3020; color: #60d080; }
+    .badge-karura  { background: #302010; color: #e0b040; }
+
+    .balance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .balance-item {
+      background: #12102a;
+      border: 1px solid #2a2450;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .balance-item .token-name {
+      font-size: 0.8rem;
+      color: #9080c0;
+      margin-bottom: 6px;
+    }
+
+    .balance-item .token-amount {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #c9b8ff;
+    }
+
+    .balance-item .token-unit {
+      font-size: 0.75rem;
+      color: #6a5a90;
+    }
+
+    .install-notice {
+      background: #2a1a10;
+      border: 1px solid #c06020;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .install-notice p { font-size: 0.85rem; color: #e0b080; line-height: 1.7; }
+    .install-notice a { color: #ffc080; }
+
+    #empty-cards {
+      color: #6a5a90;
+      font-size: 0.85rem;
+      padding: 16px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Building Magia</h1>
+  <p class="subtitle">Mpurse Wallet Integration — Verification Page / ウォレット連携検証ページ</p>
+
+  <!-- Step 1: Mpurse Detection -->
+  <div class="card">
+    <h2>Step 1 — Mpurse 検出 / Detection</h2>
+    <div class="status-row">
+      <div class="status-dot" id="dot-mpurse"></div>
+      <span class="status-label">Mpurse 拡張機能</span>
+      <span class="status-value" id="val-mpurse">確認中...</span>
+    </div>
+    <div id="install-notice" class="install-notice" style="display:none;">
+      <p>
+        Mpurse がインストールされていません。<br>
+        Mpurse は Monaparty ウォレットの Chrome/Firefox 拡張機能です。<br>
+        <a href="https://github.com/tadajam/mpurse" target="_blank">→ GitHub: tadajam/mpurse</a> からインストールしてください。
+      </p>
+    </div>
+  </div>
+
+  <!-- Step 2: Connect Wallet -->
+  <div class="card">
+    <h2>Step 2 — ウォレット接続 / Connect Wallet</h2>
+    <div class="status-row">
+      <div class="status-dot" id="dot-address"></div>
+      <span class="status-label">アドレス</span>
+      <span class="status-value" id="val-address">未接続</span>
+    </div>
+    <button id="btn-connect" onclick="connectWallet()">ウォレットに接続する</button>
+    <div class="log-box" id="log-connect"></div>
+  </div>
+
+  <!-- Step 3: Balances -->
+  <div class="card">
+    <h2>Step 3 — 残高確認 / Balances</h2>
+    <div class="balance-grid">
+      <div class="balance-item">
+        <div class="token-name">XMP</div>
+        <div class="token-amount" id="bal-xmp">—</div>
+        <div class="token-unit">XMP</div>
+      </div>
+      <div class="balance-item">
+        <div class="token-name">KEKKAI（イベント通貨）</div>
+        <div class="token-amount" id="bal-kekkai">—</div>
+        <div class="token-unit">KEKKAI</div>
+      </div>
+    </div>
+    <button id="btn-balance" onclick="fetchBalances()" disabled>残高を取得する</button>
+    <div class="log-box" id="log-balance"></div>
+  </div>
+
+  <!-- Step 4: NFT Cards -->
+  <div class="card">
+    <h2>Step 4 — 保有 NFT カード / Owned Building Cards</h2>
+    <button id="btn-cards" onclick="fetchCards()" disabled>カードを取得する</button>
+    <div id="empty-cards">ウォレット接続後にカードを取得できます</div>
+    <div class="card-grid" id="card-grid"></div>
+    <div class="log-box" id="log-cards"></div>
+  </div>
+
+  <!-- Step 5: Raw API Test -->
+  <div class="card">
+    <h2>Step 5 — mpchain API 生レスポンス確認 / Raw API Response</h2>
+    <button id="btn-raw" onclick="fetchRawBalances()" disabled>全アセット残高を取得（生データ）</button>
+    <div class="log-box" id="log-raw"></div>
+  </div>
+
+  <script>
+    let connectedAddress = null;
+
+    // ===== ログ出力ユーティリティ =====
+    function log(boxId, msg, type = 'info') {
+      const box = document.getElementById(boxId);
+      const line = document.createElement('div');
+      line.className = `log-${type}`;
+      const ts = new Date().toLocaleTimeString('ja-JP');
+      line.textContent = `[${ts}] ${msg}`;
+      box.appendChild(line);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ===== Step 1: Mpurse 検出 =====
+    function detectMpurse() {
+      const dot = document.getElementById('dot-mpurse');
+      const val = document.getElementById('val-mpurse');
+      const notice = document.getElementById('install-notice');
+
+      if (typeof window.mpurse !== 'undefined') {
+        dot.className = 'status-dot ok';
+        val.textContent = '検出されました ✓';
+        notice.style.display = 'none';
+      } else {
+        dot.className = 'status-dot error';
+        val.textContent = '未インストール — Mpurse が見つかりません';
+        notice.style.display = 'block';
+        document.getElementById('btn-connect').disabled = true;
+      }
+    }
+
+    // ===== Step 2: ウォレット接続 =====
+    async function connectWallet() {
+      const dot = document.getElementById('dot-address');
+      const val = document.getElementById('val-address');
+      log('log-connect', 'window.mpurse.getAddress() を呼び出し中...', 'info');
+
+      try {
+        const address = await window.mpurse.getAddress();
+        connectedAddress = address;
+        dot.className = 'status-dot ok';
+        val.textContent = address;
+        log('log-connect', `接続成功: ${address}`, 'ok');
+
+        // 後続ボタンを有効化
+        document.getElementById('btn-balance').disabled = false;
+        document.getElementById('btn-cards').disabled = false;
+        document.getElementById('btn-raw').disabled = false;
+        document.getElementById('empty-cards').textContent = '「カードを取得する」ボタンを押してください';
+
+      } catch (e) {
+        dot.className = 'status-dot error';
+        val.textContent = 'エラー';
+        log('log-connect', `エラー: ${e.message || e}`, 'error');
+      }
+    }
+
+    // ===== Step 3: 残高取得 =====
+    async function fetchBalances() {
+      if (!connectedAddress) return;
+
+      log('log-balance', 'XMP 残高を取得中...', 'info');
+      try {
+        // XMP 残高
+        const xmpRes = await window.mpurse.mpchain('balance', {
+          address: connectedAddress,
+          asset: 'XMP'
+        });
+        const xmpAmount = xmpRes.quantity !== undefined
+          ? (xmpRes.quantity / 1e8).toFixed(4)
+          : (xmpRes / 1e8).toFixed(4);
+        document.getElementById('bal-xmp').textContent = xmpAmount;
+        log('log-balance', `XMP: ${xmpAmount}`, 'ok');
+      } catch (e) {
+        log('log-balance', `XMP 取得エラー: ${e.message || e}`, 'error');
+        document.getElementById('bal-xmp').textContent = 'エラー';
+      }
+
+      try {
+        // KEKKAI 残高
+        const kekkaiRes = await window.mpurse.mpchain('balance', {
+          address: connectedAddress,
+          asset: 'KEKKAI'
+        });
+        const kekkaiAmount = kekkaiRes.quantity !== undefined
+          ? (kekkaiRes.quantity / 1e8).toFixed(4)
+          : (kekkaiRes / 1e8).toFixed(4);
+        document.getElementById('bal-kekkai').textContent = kekkaiAmount;
+        log('log-balance', `KEKKAI: ${kekkaiAmount}`, 'ok');
+      } catch (e) {
+        // KEKKAI はまだ未発行なので 0 表示
+        document.getElementById('bal-kekkai').textContent = '0';
+        log('log-balance', `KEKKAI: 未発行またはゼロ残高 (${e.message || e})`, 'warn');
+      }
+    }
+
+    // ===== Step 4: NFT カード取得 =====
+    async function fetchCards() {
+      if (!connectedAddress) return;
+      const grid = document.getElementById('card-grid');
+      const empty = document.getElementById('empty-cards');
+      grid.innerHTML = '';
+
+      log('log-cards', '全アセット残高を取得中...', 'info');
+      try {
+        const allBalances = await window.mpurse.mpchain('balances', {
+          address: connectedAddress
+        });
+
+        log('log-cards', `取得アセット数: ${allBalances.length}`, 'info');
+
+        // Building Magia カードをフィルタリング
+        const buildingCards = allBalances.filter(b =>
+          b.asset.startsWith('GOHO.') ||
+          b.asset.startsWith('KINNARA.') ||
+          b.asset.startsWith('KARURA.')
+        );
+
+        log('log-cards', `Building Magia カード数: ${buildingCards.length}`, 'ok');
+
+        if (buildingCards.length === 0) {
+          empty.textContent = 'Building Magia のカードは見つかりませんでした（GOHO.* / KINNARA.* / KARURA.* のアセットがありません）';
+          empty.style.display = 'block';
+
+          // デモ用：テストカードを表示
+          log('log-cards', 'デモ用テストカードを表示します', 'warn');
+          renderDemoCards();
+          return;
+        }
+
+        empty.style.display = 'none';
+
+        // Monacard API でカード情報取得
+        const assetNames = buildingCards.map(b => b.asset).join(',');
+        log('log-cards', `Monacard API 呼び出し: ${assetNames}`, 'info');
+
+        const cardRes = await fetch(
+          `https://card.mona.jp/api/card_detail?assets=${encodeURIComponent(assetNames)}`
+        );
+        const cardData = await cardRes.json();
+        log('log-cards', `Monacard API レスポンス取得完了`, 'ok');
+
+        buildingCards.forEach(b => {
+          const detail = cardData[b.asset] || {};
+          renderCard(grid, b, detail);
+        });
+
+      } catch (e) {
+        log('log-cards', `エラー: ${e.message || e}`, 'error');
+        empty.textContent = 'カード取得中にエラーが発生しました';
+      }
+    }
+
+    function getClass(assetName) {
+      if (assetName.startsWith('GOHO.'))    return 'goho';
+      if (assetName.startsWith('KINNARA.')) return 'kinnara';
+      if (assetName.startsWith('KARURA.'))  return 'karura';
+      return '';
+    }
+
+    function renderCard(grid, balance, detail) {
+      const cls = getClass(balance.asset);
+      const qty = (balance.quantity / 1e8).toFixed(0);
+      const name = detail.name || balance.asset;
+      const imgUrl = detail.img_url || '';
+
+      const div = document.createElement('div');
+      div.className = `nft-card class-${cls}`;
+      div.innerHTML = `
+        ${imgUrl ? `<img src="${imgUrl}" alt="${name}" onerror="this.style.display='none'">` : ''}
+        <div class="nft-name">${name}</div>
+        <div class="nft-asset">${balance.asset}</div>
+        <span class="badge badge-${cls}">${cls.toUpperCase()}</span>
+        <div class="nft-qty">所持数: ${qty}</div>
+      `;
+      grid.appendChild(div);
+    }
+
+    function renderDemoCards() {
+      const grid = document.getElementById('card-grid');
+      document.getElementById('empty-cards').style.display = 'none';
+      const demos = [
+        { asset: 'GOHO.SHIBUYA_SCRAMBLE',  name: '渋谷スクランブルスクエア', qty: 3 },
+        { asset: 'KINNARA.SHINJUKU_NS',     name: '新宿NSビル',               qty: 1 },
+        { asset: 'KARURA.TOKYO_MIDTOWN',    name: '東京ミッドタウン',          qty: 2 },
+        { asset: 'GOHO.MORI_TOWER',         name: '六本木ヒルズ森タワー',      qty: 1 },
+      ];
+      demos.forEach(d => {
+        renderCard(grid, { asset: d.asset, quantity: d.qty * 1e8 }, { name: d.name });
+      });
+    }
+
+    // ===== Step 5: 生データ取得 =====
+    async function fetchRawBalances() {
+      if (!connectedAddress) return;
+      log('log-raw', '全アセット残高（生データ）を取得中...', 'info');
+      try {
+        const res = await window.mpurse.mpchain('balances', {
+          address: connectedAddress
+        });
+        log('log-raw', JSON.stringify(res, null, 2), 'ok');
+      } catch (e) {
+        log('log-raw', `エラー: ${e.message || e}`, 'error');
+      }
+    }
+
+    // ===== 初期化 =====
+    window.addEventListener('load', () => {
+      // Mpurse は非同期で注入されることがあるため少し待つ
+      setTimeout(detectMpurse, 500);
+    });
+  </script>
+</body>
+</html>
