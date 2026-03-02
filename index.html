@@ -270,20 +270,32 @@
     return [];
   }
 
+  // quantityが整数(satoshi形式)か小数(すでに変換済み)かを自動判定
+  function normalizeQty(qty) {
+    if (qty === undefined || qty === null) return 0;
+    var n = parseFloat(qty);
+    // 1e6より大きい整数はsatoshi形式と判断して1e8で割る
+    if (Number.isInteger(n) && n > 1000000) return n / 1e8;
+    return n;
+  }
+
   async function fetchBalances() {
     if (!addr) return;
     addLog('log-balance', '全アセット残高を一括取得中...', 'info');
     try {
       var raw = await window.mpurse.mpchain('balances', { address: addr });
-      addLog('log-balance', '[DEBUG] 生データ型: ' + typeof raw + ' / ' + JSON.stringify(raw).substring(0, 120), 'info');
+      addLog('log-balance', '[DEBUG] 生データ: ' + JSON.stringify(raw).substring(0, 150), 'info');
       var all = normalizeBalances(raw);
       addLog('log-balance', '取得完了: ' + all.length + ' アセット', 'ok');
 
       var xmpItem = all.find(function(b){ return b.asset === 'XMP'; });
       var kekkaiItem = all.find(function(b){ return b.asset === 'KEKKAI'; });
 
-      var xmpQty = xmpItem ? (xmpItem.quantity / 1e8).toFixed(4) : '0.0000';
-      var kekkaiQty = kekkaiItem ? (kekkaiItem.quantity / 1e8).toFixed(4) : '0.0000';
+      var xmpQty = xmpItem ? normalizeQty(xmpItem.quantity).toLocaleString('ja-JP', {maximumFractionDigits: 4}) : '0';
+      var kekkaiQty = kekkaiItem ? normalizeQty(kekkaiItem.quantity).toLocaleString('ja-JP', {maximumFractionDigits: 4}) : '0';
+
+      // DEBUGログ: 生のquantity値を表示
+      if (xmpItem) addLog('log-balance', '[DEBUG] XMP raw quantity: ' + xmpItem.quantity, 'info');
 
       document.getElementById('bal-xmp').textContent = xmpQty;
       document.getElementById('bal-kekkai').textContent = kekkaiQty;
