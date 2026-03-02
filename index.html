@@ -94,6 +94,13 @@
     .install-notice a { color:#ffc080; }
     .empty-msg { text-align:center; color:var(--muted); font-size:0.85rem; padding:20px 0; }
 
+    /* DIRECTION GRID */
+    .dir-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-top:8px; }
+    .dir-cell { border:1px solid #444; border-radius:4px; padding:4px 2px; text-align:center; background:#0a0a14; }
+    .dir-label  { display:block; font-size:0.55rem; color:var(--muted); }
+    .dir-rarity { display:block; font-size:0.7rem; font-weight:bold; }
+    .dir-effect { display:block; font-size:0.52rem; color:#6a5a90; }
+
     /* FOOTER */
     footer { text-align:center; padding:32px 24px; border-top:1px solid var(--border); color:var(--muted); font-size:0.78rem; line-height:2; }
     footer a { color:var(--accent2); text-decoration:none; }
@@ -338,30 +345,76 @@
     return '';
   }
 
+  function parseDirections(detail) {
+    // add_descriptionにJSON文字列で方位属性が格納されている場合にパース
+    try {
+      if (detail.add_description) {
+        var d = JSON.parse(detail.add_description);
+        return d.directions || null;
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  var RARITY_COLOR = { 'N':'#aaa', 'R':'#4fc3f7', 'SR':'#ce93d8', 'SSR':'#ffd54f' };
+  var DIR_LABELS = [
+    { key:'n',  label:'子 N',   effect:'DEF' },
+    { key:'ne', label:'丑寅 NE', effect:'特殊' },
+    { key:'e',  label:'卯 E',   effect:'ATK' },
+    { key:'se', label:'辰巳 SE', effect:'SPD' },
+    { key:'s',  label:'午 S',   effect:'HP' },
+    { key:'sw', label:'未申 SW', effect:'回復' },
+    { key:'w',  label:'酉 W',   effect:'MP' },
+    { key:'nw', label:'戌亥 NW', effect:'耗久' },
+    { key:'c',  label:'土 C',   effect:'クラス' }
+  ];
+
   function renderCard(grid, b, detail) {
     var c = getClass(b.asset);
-    var qty = Math.floor(b.quantity / 1e8);
+    var qty = parseFloat(b.quantity);
     var name = detail.name || b.asset;
     var img = detail.img_url || '';
+    var dirs = parseDirections(detail);
     var div = document.createElement('div');
     div.className = 'ncard ' + c;
+
+    var dirHtml = '';
+    if (dirs) {
+      dirHtml = '<div class="dir-grid">';
+      DIR_LABELS.forEach(function(d) {
+        var r = dirs[d.key] || 'N';
+        var col = RARITY_COLOR[r] || '#aaa';
+        dirHtml += '<div class="dir-cell" style="border-color:' + col + '">' +
+          '<span class="dir-label">' + d.label + '</span>' +
+          '<span class="dir-rarity" style="color:' + col + '">' + r + '</span>' +
+          '<span class="dir-effect">' + d.effect + '</span>' +
+          '</div>';
+      });
+      dirHtml += '</div>';
+    }
+
     div.innerHTML =
       (img ? '<img src="' + img + '" alt="' + name + '" loading="lazy" onerror="this.style.display=\'none\'">' : '') +
       '<div class="nname">' + name + '</div>' +
       '<div class="nasset">' + b.asset + '</div>' +
       '<span class="badge ' + c + '">' + c.toUpperCase() + '</span>' +
-      '<div class="nqty">所持数: ' + qty + '</div>';
+      '<div class="nqty">所持数: ' + qty.toLocaleString('ja-JP', {maximumFractionDigits:0}) + '</div>' +
+      dirHtml;
     grid.appendChild(div);
   }
 
   function renderDemo(grid) {
+    var demoDir1 = JSON.stringify({class:'GOHO',building_name:'渋谷スクランブルスクエア',atk:72,def:65,spd:80,rarity:'SR',directions:{n:'SR',ne:'R',e:'SR',se:'N',s:'SSR',sw:'R',w:'SR',nw:'N',c:'GOHO'}});
+    var demoDir2 = JSON.stringify({class:'KINNARA',building_name:'新宿NSビル',atk:55,def:80,spd:60,rarity:'R',directions:{n:'R',ne:'N',e:'R',se:'SR',s:'R',sw:'N',w:'R',nw:'SR',c:'KINNARA'}});
+    var demoDir3 = JSON.stringify({class:'KARURA',building_name:'東京ミッドタウン',atk:90,def:50,spd:95,rarity:'SSR',directions:{n:'SSR',ne:'SR',e:'SSR',se:'SR',s:'R',sw:'SSR',w:'SR',nw:'R',c:'KARURA'}});
+    var demoDir4 = JSON.stringify({class:'GOHO',building_name:'六本木ヒルズ森タワー',atk:68,def:75,spd:70,rarity:'SR',directions:{n:'N',ne:'SSR',e:'SR',se:'R',s:'SR',sw:'SR',w:'N',nw:'SSR',c:'GOHO'}});
     var demos = [
-      { asset:'GOHO.SHIBUYA_SCRAMBLE',  name:'渋谷スクランブルスクエア', qty:3 },
-      { asset:'KINNARA.SHINJUKU_NS',     name:'新宿NSビル',               qty:1 },
-      { asset:'KARURA.TOKYO_MIDTOWN',    name:'東京ミッドタウン',          qty:2 },
-      { asset:'GOHO.MORI_TOWER',         name:'六本木ヒルズ森タワー',      qty:1 }
+      { asset:'GOHO.SHIBUYA_SCRAMBLE',  qty:3,  detail:{ name:'渋谷スクランブルスクエア', add_description:demoDir1 } },
+      { asset:'KINNARA.SHINJUKU_NS',     qty:1,  detail:{ name:'新宿NSビル',               add_description:demoDir2 } },
+      { asset:'KARURA.TOKYO_MIDTOWN',    qty:2,  detail:{ name:'東京ミッドタウン',          add_description:demoDir3 } },
+      { asset:'GOHO.MORI_TOWER',         qty:1,  detail:{ name:'六本木ヒルズ森タワー',      add_description:demoDir4 } }
     ];
-    demos.forEach(function(d){ renderCard(grid, { asset:d.asset, quantity:d.qty*1e8 }, { name:d.name }); });
+    demos.forEach(function(d){ renderCard(grid, { asset:d.asset, quantity:d.qty }, d.detail); });
   }
 
   async function fetchRaw() {
