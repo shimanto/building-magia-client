@@ -270,40 +270,33 @@
     return [];
   }
 
-  // quantityが整数(satoshi形式)か小数(すでに変換済み)かを自動判定
-  function normalizeQty(qty) {
-    if (qty === undefined || qty === null) return 0;
-    var n = parseFloat(qty);
-    // 1e6より大きい整数はsatoshi形式と判断して1e8で割る
-    if (Number.isInteger(n) && n > 1000000) return n / 1e8;
-    return n;
+  // quantityはMpurse mobileでは小数点形式(例:459200.00000000)で返る
+  function formatQty(qty) {
+    if (qty === undefined || qty === null) return '0';
+    return parseFloat(qty).toLocaleString('ja-JP', {maximumFractionDigits: 4});
   }
 
   async function fetchBalances() {
     if (!addr) return;
-    addLog('log-balance', '全アセット残高を一括取得中...', 'info');
+    addLog('log-balance', 'XMP・KEKKAI残高を取得中...', 'info');
     try {
-      var raw = await window.mpurse.mpchain('balances', { address: addr });
-      addLog('log-balance', '[DEBUG] 生データ: ' + JSON.stringify(raw).substring(0, 150), 'info');
-      var all = normalizeBalances(raw);
-      addLog('log-balance', '取得完了: ' + all.length + ' アセット', 'ok');
-
-      var xmpItem = all.find(function(b){ return b.asset === 'XMP'; });
-      var kekkaiItem = all.find(function(b){ return b.asset === 'KEKKAI'; });
-
-      var xmpQty = xmpItem ? normalizeQty(xmpItem.quantity).toLocaleString('ja-JP', {maximumFractionDigits: 4}) : '0';
-      var kekkaiQty = kekkaiItem ? normalizeQty(kekkaiItem.quantity).toLocaleString('ja-JP', {maximumFractionDigits: 4}) : '0';
-
-      // DEBUGログ: 生のquantity値を表示
-      if (xmpItem) addLog('log-balance', '[DEBUG] XMP raw quantity: ' + xmpItem.quantity, 'info');
-
+      // XMPとKEKKAIを個別に取得（パフォーマンス優先）
+      var xmpRes = await window.mpurse.mpchain('balance', { address: addr, asset: 'XMP' });
+      var xmpQty = formatQty(xmpRes.quantity !== undefined ? xmpRes.quantity : xmpRes);
       document.getElementById('bal-xmp').textContent = xmpQty;
-      document.getElementById('bal-kekkai').textContent = kekkaiQty;
-
       addLog('log-balance', 'XMP: ' + xmpQty, 'ok');
-      addLog('log-balance', 'KEKKAI: ' + kekkaiQty + (kekkaiItem ? '' : ' (未発行または未保有)'), kekkaiItem ? 'ok' : 'warn');
     } catch(e) {
-      addLog('log-balance', 'エラー: ' + (e.message || e), 'error');
+      document.getElementById('bal-xmp').textContent = '0';
+      addLog('log-balance', 'XMP取得エラー: ' + (e.message || e), 'error');
+    }
+    try {
+      var kekkaiRes = await window.mpurse.mpchain('balance', { address: addr, asset: 'KEKKAI' });
+      var kekkaiQty = formatQty(kekkaiRes.quantity !== undefined ? kekkaiRes.quantity : kekkaiRes);
+      document.getElementById('bal-kekkai').textContent = kekkaiQty;
+      addLog('log-balance', 'KEKKAI: ' + kekkaiQty, 'ok');
+    } catch(e) {
+      document.getElementById('bal-kekkai').textContent = '0';
+      addLog('log-balance', 'KEKKAI: 0 (未発行または未保有)', 'warn');
     }
   }
 
