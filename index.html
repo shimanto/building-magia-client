@@ -257,11 +257,26 @@
     }
   }
 
+  // Mpurse mobileのbalances APIはオブジェクト形式 {data:[...]} で返す場合がある
+  function normalizeBalances(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    if (raw && Array.isArray(raw.result)) return raw.result;
+    // オブジェクトの場合は値の配列を試みる
+    if (raw && typeof raw === 'object') {
+      var vals = Object.values(raw);
+      if (vals.length > 0 && Array.isArray(vals[0])) return vals[0];
+    }
+    return [];
+  }
+
   async function fetchBalances() {
     if (!addr) return;
     addLog('log-balance', '全アセット残高を一括取得中...', 'info');
     try {
-      var all = await window.mpurse.mpchain('balances', { address: addr });
+      var raw = await window.mpurse.mpchain('balances', { address: addr });
+      addLog('log-balance', '[DEBUG] 生データ型: ' + typeof raw + ' / ' + JSON.stringify(raw).substring(0, 120), 'info');
+      var all = normalizeBalances(raw);
       addLog('log-balance', '取得完了: ' + all.length + ' アセット', 'ok');
 
       var xmpItem = all.find(function(b){ return b.asset === 'XMP'; });
@@ -287,7 +302,8 @@
     grid.innerHTML = '';
     addLog('log-cards', '全アセット残高を取得中...', 'info');
     try {
-      var all = await window.mpurse.mpchain('balances', { address: addr });
+      var raw2 = await window.mpurse.mpchain('balances', { address: addr });
+      var all = normalizeBalances(raw2);
       addLog('log-cards', '取得アセット数: ' + all.length, 'info');
       var cards = all.filter(function(b){
         return b.asset.startsWith('GOHO.') || b.asset.startsWith('KINNARA.') || b.asset.startsWith('KARURA.');
